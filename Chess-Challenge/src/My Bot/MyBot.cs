@@ -43,7 +43,20 @@ public class MyBot : IChessBot
             }
         }
 
-        // Pawn Structure -(Double and Isolated), +(Passed, Supported)
+        // Checkmate
+        if (board.IsInCheckmate())
+        {
+            if (board.IsWhiteToMove)
+            {
+                score += 10000; // Black wins
+            }
+            else
+            {
+                score -= 10000; // White wins
+            }
+        }
+
+        // Pawn Structure - Penalty for Doubled and Isolated Pawns
         ulong whitePawns = board.GetPieceBitboard(PieceType.Pawn, true);
         ulong blackPawns = board.GetPieceBitboard(PieceType.Pawn, false);
         for (int file = 0; file < 8; file++)
@@ -64,13 +77,13 @@ public class MyBot : IChessBot
             if ((blackPawns & adjFilesMask) == 0) score -= 20;
         }
 
-        // Reward Passed pawns
+        // Pawn Structure - Reward Passed pawns
         ulong passedWhitePawns = whitePawns & ~((blackPawns >> 8) | (blackPawns >> 7) | (blackPawns >> 9));
         ulong passedBlackPawns = blackPawns & ~((whitePawns << 8) | (whitePawns << 7) | (whitePawns << 9));
         score += 30 * BitboardHelper.GetNumberOfSetBits(passedWhitePawns);
         score -= 30 * BitboardHelper.GetNumberOfSetBits(passedBlackPawns);
 
-        // Reward Supported pawns
+        // Pawn Structure - Reward Supported pawns
         ulong supportedWhitePawns = whitePawns & ((whitePawns << 7) | (whitePawns << 9) | (whitePawns << 8));
         ulong supportedBlackPawns = blackPawns & ((blackPawns >> 7) | (blackPawns >> 9) | (blackPawns >> 8));
         score += 15 * BitboardHelper.GetNumberOfSetBits(supportedWhitePawns);
