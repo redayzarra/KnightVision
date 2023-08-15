@@ -1,51 +1,92 @@
 ﻿using ChessChallenge.API;
-using System;
-using System.Linq; 
-using System.Collections.Generic;
 
 public class MyBot : IChessBot
-{   
-    // Piece values: null, pawn, knight, bishop, rook, queen, king
-    readonly int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
+{
+    // Piece values: pawn, knight, bishop, rook, queen, king
+    private readonly int[] pieceValues = { 100, 300, 325, 500, 900, 10000 };
 
     public Move Think(Board board, Timer timer)
     {
-        Move[] allMoves = board.GetLegalMoves();
+        Move[] moves = board.GetLegalMoves();
+        return moves[0];
+    }
 
-        // Pick a random move to play if nothing better is found
-        Random rng = new();
-        Move moveToPlay = allMoves[rng.Next(allMoves.Length)];
-        int highestValueCapture = 0;
+    private int Evaluate(Board board)
+    {
+        int score = 0;
 
-        foreach (Move move in allMoves)
+        // Material Advantage
+        PieceList[] pieceLists = board.GetAllPieceLists();
+        for (int i = 0; i < 12; i++)
         {
-            // Always play checkmate in one
-            if (MoveIsCheckmate(board, move))
+            int pieceValue = pieceValues[(int)pieceLists[i].TypeOfPieceInList - 1];
+            if (pieceLists[i].IsWhitePieceList)
             {
-                moveToPlay = move;
-                break;
+                score -= pieceValue * pieceLists[i].Count;
             }
-
-            // Find highest value capture
-            Piece capturedPiece = board.GetPiece(move.TargetSquare);
-            int capturedPieceValue = pieceValues[(int)capturedPiece.PieceType];
-
-            if (capturedPieceValue > highestValueCapture)
+            else
             {
-                moveToPlay = move;
-                highestValueCapture = capturedPieceValue;
+                score += pieceValue * pieceLists[i].Count;
             }
         }
 
-        return moveToPlay;
-    }
+        // King Safety
+        if (board.IsInCheck())
+        {
+            if (board.IsWhiteToMove)
+            {
+                score += 50; // Black has an advantage
+            }
+            else
+            {
+                score -= 50; // White has an advantage
+            }
+        }
 
-    // Test if this move gives checkmate
-    bool MoveIsCheckmate(Board board, Move move)
-    {
-        board.MakeMove(move);
-        bool isMate = board.IsInCheckmate();
-        board.UndoMove(move);
-        return isMate;
+        // Pawn Structure -(Double and Isolated), +(Passed, Supported)
+        ulong whitePawns = board.GetPieceBitboard(PieceType.Pawn, true);
+        ulong blackPawns = board.GetPieceBitboard(PieceType.Pawn, false);
+        for (int file = 0; file < 8; file++)
+        {
+            ulong fileMask = 0x0101010101010101UL << file;
+            int whitePawnsInFile = BitboardHelper.GetNumberOfSetBits(whitePawns & fileMask);
+            int blackPawnsInFile = BitboardHelper.GetNumberOfSetBits(blackPawns & fileMask);
+                
+            // Penalize Doubled pawns
+            if (whitePawnsInFile > 1) score += 10 * (whitePawnsInFile - 1);
+            if (blackPawnsInFile > 1) score -= 10 * (blackPawnsInFile - 1);
+                
+            // Penalize Isolated pawns
+            ulong adjFilesMask = fileMask;
+            if (file > 0) adjFilesMask |= fileMask >> 1;
+            if (file < 7) adjFilesMask |= fileMask << 1;
+            if ((whitePawns & adjFilesMask) == 0) score += 20;
+            if ((blackPawns & adjFilesMask) == 0) score -= 20;
+        }
+
+        // Reward Passed pawns
+        ulong passedWhitePawns = whitePawns & ~((blackPawns >> 8) | (blackPawns >> 7) | (blackPawns >> 9));
+        ulong passedBlackPawns = blackPawns & ~((whitePawns << 8) | (whitePawns << 7) | (whitePawns << 9));
+        score += 30 * BitboardHelper.GetNumberOfSetBits(passedWhitePawns);
+        score -= 30 * BitboardHelper.GetNumberOfSetBits(passedBlackPawns);
+
+        // Reward Supported pawns
+        ulong supportedWhitePawns = whitePawns & ((whitePawns << 7) | (whitePawns << 9) | (whitePawns << 8));
+        ulong supportedBlackPawns = blackPawns & ((blackPawns >> 7) | (blackPawns >> 9) | (blackPawns >> 8));
+        score += 15 * BitboardHelper.GetNumberOfSetBits(supportedWhitePawns);
+        score -= 15 * BitboardHelper.GetNumberOfSetBits(supportedBlackPawns);
+
+
+        // Piece Mobility
+        Move[] whiteMoves = board.GetLegalMoves(true);
+        Move[] blackMoves = board.GetLegalMoves(false);
+        score += (blackMoves.Length - whiteMoves.Length) * 10;
+
+        // Center Control
+        ulong centerSquares = 0x0000001818000000UL;
+        score += BitboardHelper.GetNumberOfSetBits(board.BlackPiecesBitboard & centerSquares) * 20;
+        score -= BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard & centerSquares) * 20;
+
+        return score;
     }
 }
