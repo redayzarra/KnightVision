@@ -95,6 +95,22 @@ public class MyBot : IChessBot
         Move[] blackMoves = board.GetLegalMoves(false);
         score += (blackMoves.Length - whiteMoves.Length) * 10;
 
+        // Reward for captures
+        foreach (var move in whiteMoves)
+        {
+            if (move.IsCapture)
+            {
+                score -= pieceValues[(int)move.CapturePieceType - 1];
+            }
+        }
+        foreach (var move in blackMoves)
+        {
+            if (move.IsCapture)
+            {
+                score += pieceValues[(int)move.CapturePieceType - 1];
+            }
+        }
+
         // Center Control
         ulong centerSquares = 0x0000001818000000UL;
         score += BitboardHelper.GetNumberOfSetBits(board.BlackPiecesBitboard & centerSquares) * 20;
