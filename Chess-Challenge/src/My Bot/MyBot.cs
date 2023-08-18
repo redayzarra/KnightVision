@@ -13,6 +13,8 @@ public class MyBot : IChessBot
 
     private int Evaluate(Board board)
     {
+        // Piece values: pawn, knight, bishop, rook, queen, king
+        int[] pieceValues = { 100, 300, 325, 500, 900, 10000 };
         int score = 0;
 
         // Material Advantage
@@ -89,7 +91,6 @@ public class MyBot : IChessBot
         score += 15 * BitboardHelper.GetNumberOfSetBits(supportedWhitePawns);
         score -= 15 * BitboardHelper.GetNumberOfSetBits(supportedBlackPawns);
 
-
         // Piece Mobility
         Move[] whiteMoves = board.GetLegalMoves(true);
         Move[] blackMoves = board.GetLegalMoves(false);
@@ -100,14 +101,16 @@ public class MyBot : IChessBot
         {
             if (move.IsCapture)
             {
-                score -= pieceValues[(int)move.CapturePieceType - 1];
+                int captureScore = pieceValues[(int)move.CapturePieceType - 1] - pieceValues[(int)move.MovePieceType - 1];
+                score -= captureScore;
             }
         }
         foreach (var move in blackMoves)
         {
             if (move.IsCapture)
             {
-                score += pieceValues[(int)move.CapturePieceType - 1];
+                int captureScore = pieceValues[(int)move.CapturePieceType - 1] - pieceValues[(int)move.MovePieceType - 1];
+                score += captureScore;
             }
         }
 
