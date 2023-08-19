@@ -19,7 +19,7 @@ public class MyBot : IChessBot
     {
         Move bestMove = board.GetLegalMoves()[0];
         int bestScore = int.MinValue;
-        int maxDepth = 4; // Maximum depth I want to search
+        int maxDepth = 5; // Maximum depth I want to search
         
         for (int depth = 1; depth <= maxDepth; depth++)
         {
@@ -39,9 +39,21 @@ public class MyBot : IChessBot
         return bestMove;
     }
 
+    private Dictionary<ulong, TranspositionEntry> transpositionTable = new Dictionary<ulong, TranspositionEntry>();
+
     // Minimax algorithm with alpha-beta pruning for deciding the best move
     private int Minimax(Board board, int depth, bool isMaximizing, int alpha, int beta)
     {
+        ulong zobristKey = board.ZobristKey;
+        if (transpositionTable.ContainsKey(zobristKey))
+        {
+            TranspositionEntry entry = transpositionTable[zobristKey];
+            if (entry.Depth >= depth)
+            {
+                return entry.Score;
+            }
+        }
+
         // Base case: if we have reached the maximum depth, evaluate the current board state.
         if (depth == 0)
             return Evaluate(board);
@@ -64,6 +76,8 @@ public class MyBot : IChessBot
                 }
                 board.UndoMove(move);
             }
+
+            transpositionTable[zobristKey] = new TranspositionEntry { Score = maxEval, Depth = depth };
             return maxEval;
         }
 
@@ -87,7 +101,38 @@ public class MyBot : IChessBot
                 }
                 board.UndoMove(move);
             }
+
+            transpositionTable[zobristKey] = new TranspositionEntry { Score = minEval, Depth = depth };
             return minEval;
+        }
+    }
+
+    public class TranspositionEntry
+    {
+        public int Score { get; set; }
+        public int Depth { get; set; }
+    }
+
+    public class TranspositionTable
+    {
+        private const int TableSize = 67108864; // This size is calculated based on the size of TranspositionEntry and the 256MB limit
+        private TranspositionEntry[] table;
+
+        public TranspositionTable()
+        {
+            table = new TranspositionEntry[TableSize];
+        }
+
+        public void Add(ulong key, TranspositionEntry entry)
+        {
+            int index = (int)(key % TableSize);
+            table[index] = entry;
+        }
+
+        public TranspositionEntry Get(ulong key)
+        {
+            int index = (int)(key % TableSize);
+            return table[index];
         }
     }
 
