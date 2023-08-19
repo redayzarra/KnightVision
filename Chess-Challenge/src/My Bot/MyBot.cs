@@ -8,6 +8,8 @@ public class MyBot : IChessBot
     // Piece values: pawn, knight, bishop, rook, queen, king
     private readonly int[] pieceValues = { 100, 300, 325, 500, 900, 10000 };
     private readonly List<Move>[] killerMoves = new List<Move>[10];
+    private const int TranspositionTableSize = 67108864; // This size is calculated based on the size of TranspositionEntry and the 256MB limit
+    private TranspositionEntry[] transpositionTable = new TranspositionEntry[TranspositionTableSize];
 
     public MyBot()
     {
@@ -39,26 +41,18 @@ public class MyBot : IChessBot
         return bestMove;
     }
 
-    private Dictionary<ulong, TranspositionEntry> transpositionTable = new Dictionary<ulong, TranspositionEntry>();
-
     // Minimax algorithm with alpha-beta pruning for deciding the best move
     private int Minimax(Board board, int depth, bool isMaximizing, int alpha, int beta)
     {
         ulong zobristKey = board.ZobristKey;
-        if (transpositionTable.ContainsKey(zobristKey))
-        {
-            TranspositionEntry entry = transpositionTable[zobristKey];
-            if (entry.Depth >= depth)
-            {
-                return entry.Score;
-            }
-        }
+        int index = (int)(zobristKey % TranspositionTableSize);
+        TranspositionEntry entry = transpositionTable[index];
+        if (entry != null && entry.Depth >= depth)
+            return entry.Score;
 
-        // Base case: if we have reached the maximum depth, evaluate the current board state.
         if (depth == 0)
             return Evaluate(board);
 
-        // Maximizing player's turn (typically the bot):
         if (isMaximizing)
         {
             int maxEval = int.MinValue;
@@ -72,21 +66,16 @@ public class MyBot : IChessBot
                 {
                     board.UndoMove(move);
                     UpdateKillerMoves(depth, move);
-                    break; // Alpha-beta pruning: cut-off the search as it won't improve the result
+                    break;
                 }
                 board.UndoMove(move);
             }
-
-            transpositionTable[zobristKey] = new TranspositionEntry { Score = maxEval, Depth = depth };
+            transpositionTable[index] = new TranspositionEntry { Score = maxEval, Depth = depth };
             return maxEval;
         }
-
-        // Minimizing player's turn (typically the opponent):
         else
         {
             int minEval = int.MaxValue;
-
-            // Iterate over all possible moves, ordered by their likely effectiveness.
             foreach (var move in OrderMoves(board, board.GetLegalMoves().ToList(), depth))
             {
                 board.MakeMove(move);
@@ -97,12 +86,11 @@ public class MyBot : IChessBot
                 {
                     board.UndoMove(move);
                     UpdateKillerMoves(depth, move);
-                    break; // Alpha-beta pruning: cut-off the search as it won't improve the result
+                    break;
                 }
                 board.UndoMove(move);
             }
-
-            transpositionTable[zobristKey] = new TranspositionEntry { Score = minEval, Depth = depth };
+            transpositionTable[index] = new TranspositionEntry { Score = minEval, Depth = depth };
             return minEval;
         }
     }
@@ -111,29 +99,6 @@ public class MyBot : IChessBot
     {
         public int Score { get; set; }
         public int Depth { get; set; }
-    }
-
-    public class TranspositionTable
-    {
-        private const int TableSize = 67108864; // This size is calculated based on the size of TranspositionEntry and the 256MB limit
-        private TranspositionEntry[] table;
-
-        public TranspositionTable()
-        {
-            table = new TranspositionEntry[TableSize];
-        }
-
-        public void Add(ulong key, TranspositionEntry entry)
-        {
-            int index = (int)(key % TableSize);
-            table[index] = entry;
-        }
-
-        public TranspositionEntry Get(ulong key)
-        {
-            int index = (int)(key % TableSize);
-            return table[index];
-        }
     }
 
     private int Evaluate(Board board)
@@ -145,6 +110,7 @@ public class MyBot : IChessBot
         for (int i = 0; i < 12; i++)
         {
             int pieceValue = pieceValues[(int)pieceLists[i].TypeOfPieceInList - 1];
+
             if (pieceLists[i].IsWhitePieceList)
                 score -= pieceValue * pieceLists[i].Count;
             else
@@ -155,18 +121,18 @@ public class MyBot : IChessBot
         if (board.IsInCheck())
         {
             if (board.IsWhiteToMove)
-                score += 50;
+                score += 20;
             else
-                score -= 50;
+                score -= 20;
         }
 
         // Checkmate
         if (board.IsInCheckmate())
         {
             if (board.IsWhiteToMove)
-                score += 10000;
+                score += 1000;
             else
-                score -= 10000;
+                score -= 1000;
         }
 
         // Pawn Structure - Penalty for Doubled and Isolated Pawns
@@ -211,18 +177,12 @@ public class MyBot : IChessBot
         foreach (var move in whiteMoves)
         {
             if (move.IsCapture)
-            {
-                int captureScore = pieceValues[(int)move.CapturePieceType - 1] - pieceValues[(int)move.MovePieceType - 1];
-                score -= captureScore;
-            }
+                score -= pieceValues[(int)move.CapturePieceType - 1] - pieceValues[(int)move.MovePieceType - 1];
         }
         foreach (var move in blackMoves)
         {
             if (move.IsCapture)
-            {
-                int captureScore = pieceValues[(int)move.CapturePieceType - 1] - pieceValues[(int)move.MovePieceType - 1];
-                score += captureScore;
-            }
+                score += pieceValues[(int)move.CapturePieceType - 1] - pieceValues[(int)move.MovePieceType - 1];
         }
 
         // Center Control
