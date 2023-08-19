@@ -17,19 +17,23 @@ public class MyBot : IChessBot
 
     public Move Think(Board board, Timer timer)
     {
-        int bestScore = int.MinValue;
         Move bestMove = board.GetLegalMoves()[0];
-
-        foreach (var move in board.GetLegalMoves())
+        int bestScore = int.MinValue;
+        int maxDepth = 4; // Maximum depth I want to search
+        
+        for (int depth = 1; depth <= maxDepth; depth++)
         {
-            board.MakeMove(move);
-            int score = Minimax(board, 4 - 1, false, int.MinValue, int.MaxValue); // 5 is the depth, I can adjust this based on the bot's performance
-            if (score > bestScore)
+            foreach (var move in board.GetLegalMoves())
             {
-                bestScore = score;
-                bestMove = move;
+                board.MakeMove(move);
+                int score = Minimax(board, depth - 1, false, int.MinValue, int.MaxValue);
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestMove = move;
+                }
+                board.UndoMove(move);
             }
-            board.UndoMove(move);
         }
 
         return bestMove;
