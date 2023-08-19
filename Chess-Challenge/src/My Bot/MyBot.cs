@@ -7,7 +7,7 @@ public class MyBot : IChessBot
 {
     // Piece values: pawn, knight, bishop, rook, queen, king
     private readonly int[] pieceValues = { 100, 300, 325, 500, 900, 10000 };
-    private readonly List<Move>[] killerMoves = new List<Move>[10]; // 10 is the Max Depth
+    private readonly List<Move>[] killerMoves = new List<Move>[10];
 
     public MyBot()
     {
@@ -23,7 +23,7 @@ public class MyBot : IChessBot
         foreach (var move in board.GetLegalMoves())
         {
             board.MakeMove(move);
-            int score = Minimax(board, 5 - 1, false, int.MinValue, int.MaxValue); // 5 is the depth, I can adjust this based on the bot's performance
+            int score = Minimax(board, 4 - 1, false, int.MinValue, int.MaxValue); // 5 is the depth, I can adjust this based on the bot's performance
             if (score > bestScore)
             {
                 bestScore = score;
@@ -35,11 +35,14 @@ public class MyBot : IChessBot
         return bestMove;
     }
 
+    // Minimax algorithm with alpha-beta pruning for deciding the best move
     private int Minimax(Board board, int depth, bool isMaximizing, int alpha, int beta)
     {
+        // Base case: if we have reached the maximum depth, evaluate the current board state.
         if (depth == 0)
             return Evaluate(board);
 
+        // Maximizing player's turn (typically the bot):
         if (isMaximizing)
         {
             int maxEval = int.MinValue;
@@ -53,15 +56,19 @@ public class MyBot : IChessBot
                 {
                     board.UndoMove(move);
                     UpdateKillerMoves(depth, move);
-                    break; // Beta cut-off
+                    break; // Alpha-beta pruning: cut-off the search as it won't improve the result
                 }
                 board.UndoMove(move);
             }
             return maxEval;
         }
+
+        // Minimizing player's turn (typically the opponent):
         else
         {
             int minEval = int.MaxValue;
+
+            // Iterate over all possible moves, ordered by their likely effectiveness.
             foreach (var move in OrderMoves(board, board.GetLegalMoves().ToList(), depth))
             {
                 board.MakeMove(move);
@@ -72,7 +79,7 @@ public class MyBot : IChessBot
                 {
                     board.UndoMove(move);
                     UpdateKillerMoves(depth, move);
-                    break; // Alpha cut-off
+                    break; // Alpha-beta pruning: cut-off the search as it won't improve the result
                 }
                 board.UndoMove(move);
             }
@@ -99,18 +106,18 @@ public class MyBot : IChessBot
         if (board.IsInCheck())
         {
             if (board.IsWhiteToMove)
-                score += 50; // Black has an advantage
+                score += 50;
             else
-                score -= 50; // White has an advantage
+                score -= 50;
         }
 
         // Checkmate
         if (board.IsInCheckmate())
         {
             if (board.IsWhiteToMove)
-                score += 10000; // Black wins
+                score += 10000;
             else
-                score -= 10000; // White wins
+                score -= 10000;
         }
 
         // Pawn Structure - Penalty for Doubled and Isolated Pawns
@@ -121,11 +128,11 @@ public class MyBot : IChessBot
             ulong fileMask = 0x0101010101010101UL << file;
             int whitePawnsInFile = BitboardHelper.GetNumberOfSetBits(whitePawns & fileMask);
             int blackPawnsInFile = BitboardHelper.GetNumberOfSetBits(blackPawns & fileMask);
-                
+
             // Penalize Doubled pawns
             if (whitePawnsInFile > 1) score += 10 * (whitePawnsInFile - 1);
             if (blackPawnsInFile > 1) score -= 10 * (blackPawnsInFile - 1);
-                
+
             // Penalize Isolated pawns
             ulong adjFilesMask = fileMask;
             if (file > 0) adjFilesMask |= fileMask >> 1;
@@ -177,6 +184,7 @@ public class MyBot : IChessBot
         return score;
     }
 
+    // Updates the killerMoves list with the given move if it is not already present at the current depth
     private void UpdateKillerMoves(int depth, Move move)
     {
         if (!killerMoves[depth].Contains(move))
