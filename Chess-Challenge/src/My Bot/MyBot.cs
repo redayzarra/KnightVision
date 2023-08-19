@@ -1,4 +1,5 @@
-﻿using ChessChallenge.API;
+﻿using System;
+using ChessChallenge.API;
 
 public class MyBot : IChessBot
 {
@@ -7,8 +8,68 @@ public class MyBot : IChessBot
 
     public Move Think(Board board, Timer timer)
     {
-        Move[] moves = board.GetLegalMoves();
-        return moves[0];
+        int bestScore = int.MinValue;
+        Move bestMove = board.GetLegalMoves()[0];
+        int depth = 5; // I can make the depth whatever I like based on time
+
+        foreach (var move in board.GetLegalMoves())
+        {
+            board.MakeMove(move);
+            int score = Minimax(board, depth - 1, false, int.MinValue, int.MaxValue);
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestMove = move;
+            }
+            board.UndoMove(move);
+        }
+
+        return bestMove;
+    }
+
+    private int Minimax(Board board, int depth, bool isMaximizing, int alpha, int beta)
+    {
+        if (depth == 0)
+        {
+            return Evaluate(board);
+        }
+
+        if (isMaximizing)
+        {
+            int maxEval = int.MinValue;
+            foreach (var move in board.GetLegalMoves())
+            {
+                board.MakeMove(move);
+                int eval = Minimax(board, depth - 1, false, alpha, beta);
+                maxEval = Math.Max(maxEval, eval);
+                alpha = Math.Max(alpha, eval);
+                if (beta <= alpha)
+                {
+                    board.UndoMove(move);
+                    break; // Beta cut-off
+                }
+                board.UndoMove(move);
+            }
+            return maxEval;
+        }
+        else
+        {
+            int minEval = int.MaxValue;
+            foreach (var move in board.GetLegalMoves())
+            {
+                board.MakeMove(move);
+                int eval = Minimax(board, depth - 1, true, alpha, beta);
+                minEval = Math.Min(minEval, eval);
+                beta = Math.Min(beta, eval);
+                if (beta <= alpha)
+                {
+                    board.UndoMove(move);
+                    break; // Alpha cut-off
+                }
+                board.UndoMove(move);
+            }
+            return minEval;
+        }
     }
 
     private int Evaluate(Board board)
