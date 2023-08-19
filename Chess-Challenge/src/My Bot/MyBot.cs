@@ -1,21 +1,29 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using ChessChallenge.API;
 
 public class MyBot : IChessBot
 {
     // Piece values: pawn, knight, bishop, rook, queen, king
     private readonly int[] pieceValues = { 100, 300, 325, 500, 900, 10000 };
+    private readonly List<Move>[] killerMoves = new List<Move>[10]; // 10 is the Max Depth
+
+    public MyBot()
+    {
+        for (int i = 0; i < 10; i++)
+            killerMoves[i] = new List<Move>();
+    }
 
     public Move Think(Board board, Timer timer)
     {
         int bestScore = int.MinValue;
         Move bestMove = board.GetLegalMoves()[0];
-        int depth = 5; // I can make the depth whatever I like based on time
 
         foreach (var move in board.GetLegalMoves())
         {
             board.MakeMove(move);
-            int score = Minimax(board, depth - 1, false, int.MinValue, int.MaxValue);
+            int score = Minimax(board, 5 - 1, false, int.MinValue, int.MaxValue); // 5 is the depth, I can adjust this based on the bot's performance
             if (score > bestScore)
             {
                 bestScore = score;
@@ -30,14 +38,12 @@ public class MyBot : IChessBot
     private int Minimax(Board board, int depth, bool isMaximizing, int alpha, int beta)
     {
         if (depth == 0)
-        {
             return Evaluate(board);
-        }
 
         if (isMaximizing)
         {
             int maxEval = int.MinValue;
-            foreach (var move in board.GetLegalMoves())
+            foreach (var move in OrderMoves(board, board.GetLegalMoves().ToList(), depth))
             {
                 board.MakeMove(move);
                 int eval = Minimax(board, depth - 1, false, alpha, beta);
@@ -46,6 +52,7 @@ public class MyBot : IChessBot
                 if (beta <= alpha)
                 {
                     board.UndoMove(move);
+                    UpdateKillerMoves(depth, move);
                     break; // Beta cut-off
                 }
                 board.UndoMove(move);
@@ -55,7 +62,7 @@ public class MyBot : IChessBot
         else
         {
             int minEval = int.MaxValue;
-            foreach (var move in board.GetLegalMoves())
+            foreach (var move in OrderMoves(board, board.GetLegalMoves().ToList(), depth))
             {
                 board.MakeMove(move);
                 int eval = Minimax(board, depth - 1, true, alpha, beta);
@@ -64,6 +71,7 @@ public class MyBot : IChessBot
                 if (beta <= alpha)
                 {
                     board.UndoMove(move);
+                    UpdateKillerMoves(depth, move);
                     break; // Alpha cut-off
                 }
                 board.UndoMove(move);
@@ -74,8 +82,6 @@ public class MyBot : IChessBot
 
     private int Evaluate(Board board)
     {
-        // Piece values: pawn, knight, bishop, rook, queen, king
-        int[] pieceValues = { 100, 300, 325, 500, 900, 10000 };
         int score = 0;
 
         // Material Advantage
@@ -84,39 +90,27 @@ public class MyBot : IChessBot
         {
             int pieceValue = pieceValues[(int)pieceLists[i].TypeOfPieceInList - 1];
             if (pieceLists[i].IsWhitePieceList)
-            {
                 score -= pieceValue * pieceLists[i].Count;
-            }
             else
-            {
                 score += pieceValue * pieceLists[i].Count;
-            }
         }
 
         // King Safety
         if (board.IsInCheck())
         {
             if (board.IsWhiteToMove)
-            {
                 score += 50; // Black has an advantage
-            }
             else
-            {
                 score -= 50; // White has an advantage
-            }
         }
 
         // Checkmate
         if (board.IsInCheckmate())
         {
             if (board.IsWhiteToMove)
-            {
                 score += 10000; // Black wins
-            }
             else
-            {
                 score -= 10000; // White wins
-            }
         }
 
         // Pawn Structure - Penalty for Doubled and Isolated Pawns
@@ -181,5 +175,32 @@ public class MyBot : IChessBot
         score -= BitboardHelper.GetNumberOfSetBits(board.WhitePiecesBitboard & centerSquares) * 20;
 
         return score;
+    }
+
+    private void UpdateKillerMoves(int depth, Move move)
+    {
+        if (!killerMoves[depth].Contains(move))
+            killerMoves[depth].Add(move);
+    }
+
+    private List<Move> OrderMoves(Board board, List<Move> moves, int depth)
+    {
+        List<Move> orderedMoves = new List<Move>();
+
+        // Add killer moves
+        foreach (var killerMove in killerMoves[depth])
+        {
+            if (moves.Contains(killerMove))
+                orderedMoves.Add(killerMove);
+        }
+
+        // Sort captures based on MVV-LVA
+        orderedMoves.AddRange(moves.Where(m => m.IsCapture)
+            .OrderByDescending(m => pieceValues[(int)m.CapturePieceType - 1] - pieceValues[(int)m.MovePieceType - 1]));
+
+        // Add other moves
+        orderedMoves.AddRange(moves.Except(orderedMoves));
+
+        return orderedMoves;
     }
 }
