@@ -57,9 +57,3 @@ Check if the position is in endgame (decide how to check for endgame) and switch
 ### 3. Bitboard Use
 ### 4. Dynamic Search
 ### 5. Positional Awareness
-### 6. Adaptability
-### 7. Memory Efficiency
-### 8. Horizon Effect Mitigation
-### 9. Self-Play Tuning
-### 10. Time Wisdom
-### 11. API Mastery
