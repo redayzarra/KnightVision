@@ -1,8 +1,8 @@
-# RookNoFurther - Chess Bot
+# KnightVision - Chess Bot
 
 ## Overview
 
-RookNoFurther is a chess bot created for this [Chess Coding Challenge](https://github.com/SebLague/Chess-Challenge). It's built with C# using the .NET 6.0 framework. The bot focuses on adapting to opponent moves and ensuring it works efficiently within the competition's 256mb memory limit. While it uses some complex strategies behind the scenes, the main goal is to play strong chess while staying within the competition's rules and constraints.
+KnightVision is a chess bot created for this [Chess Coding Challenge](https://github.com/SebLague/Chess-Challenge). It's built with C# using the .NET 6.0 framework. The bot focuses on adapting to opponent moves and ensuring it works efficiently within the competition's 256mb memory limit. While it uses some complex strategies behind the scenes, the main goal is to play strong chess while staying within the competition's rules and constraints.
 
 ## My Plan 
 
