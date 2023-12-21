@@ -53,7 +53,3 @@ Check if the position is in endgame (decide how to check for endgame) and switch
 
 - Pawn Structures: Use the BitboardHelper class to quickly analyze pawn structures. For example, detect passed pawns, isolated pawns, or doubled pawns.
 - King Activity: Use BitboardHelper.GetKingAttacks(Square square) to evaluate the activity and safety of the kings.
-
-### 3. Bitboard Use
-### 4. Dynamic Search
-### 5. Positional Awareness
