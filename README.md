@@ -1,5 +1,12 @@
 # KnightVision - Chess Bot
 
+<div align="center">
+ 
+  <img src="https://github.com/redayzarra/KnightVision/assets/113388793/679a66a3-73c2-41ac-9d45-383e246bc0c6" alt="KnightVision screenshot">
+
+KnightVision forks me :(
+</div>
+
 ## Overview
 
 KnightVision is a chess bot created for the [Chess Coding Challenge](https://github.com/SebLague/Chess-Challenge). Built with C# using the .NET 6.0 framework, this bot focuses on adapting to opponent moves and ensuring efficient performance within the competition's 256MB memory limit. KnightVision employs sophisticated strategies to play strong chess while adhering to the competition's rules and constraints.
