@@ -2,9 +2,16 @@
 
 <div align="center">
  
-  <img src="https://github.com/redayzarra/KnightVision/assets/113388793/679a66a3-73c2-41ac-9d45-383e246bc0c6" alt="KnightVision screenshot">
+  <img src="https://github.com/redayzarra/KnightVision/assets/113388793/3707a9c3-f873-405e-9121-71a65bd99384" alt="KnightVision forks my girlfriend">
 
-KnightVision forks me :(
+KnightVision forks my girlfriend.
+</div>
+
+
+<div align="center">
+  <img src="https://github.com/redayzarra/KnightVision/assets/113388793/bad914e9-f285-46bd-ba3a-4280ff062c87" alt="KnightVision wins a chess match against my girlfriend">
+
+KnightVision checkmates my girlfriend.
 </div>
 
 ## Overview
@@ -41,12 +48,25 @@ KnightVision uses a combination of advanced techniques to make its moves:
 
 ## Usage
 
-To run KnightVision, follow these steps:
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/redayzarra/KnightVision.git
+   ```
 
-1. Clone the repository.
-2. Open the project in your preferred C# IDE.
-3. Build the project using .NET 6.0.
-4. Run the bot using the provided commands.
+2. **Navigate to the project**:
+   ```bash
+   cd KnightVision
+   ```
+
+3. **Build the project**:
+   ```bash
+   dotnet build
+   ```
+
+3. **Run the project**:
+   ```bash
+   dotnet run
+   ```
 
 ## License
 
