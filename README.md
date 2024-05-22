@@ -8,6 +8,10 @@ KnightVision forks my girlfriend.
 </div>
 
 
+<div>
+ <br />
+</div>
+
 <div align="center">
   <img src="https://github.com/redayzarra/KnightVision/assets/113388793/bad914e9-f285-46bd-ba3a-4280ff062c87" alt="KnightVision wins a chess match against my girlfriend">
 
