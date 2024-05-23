@@ -3,7 +3,7 @@ using ChessChallenge.API;
 using static ChessChallenge.API.BitboardHelper;
 using static System.Math;
 
-public class MyBot : IChessBot
+public class KnightVision : IChessBot
 {
     // Variables to control search parameters and track the last score
     public int maxSearchTime, searchingDepth, lastScore;
