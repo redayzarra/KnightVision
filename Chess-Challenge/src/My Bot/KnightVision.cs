@@ -2,6 +2,8 @@
 using ChessChallenge.API;
 using static ChessChallenge.API.BitboardHelper;
 using static System.Math;
+using System.Collections.Generic;
+using System.Linq;
 
 public class KnightVision : IChessBot
 {
@@ -46,6 +48,50 @@ public class KnightVision : IChessBot
         0xfff9000700010007, 0xffe90003ffeefff4, 0x00000000fff5000d,
     };
 
+    // Opening book data
+    Dictionary<string, List<(string move, int weight)>> openingBook = new Dictionary<string, List<(string move, int weight)>>()
+    {
+        // Initial position - bot is white
+        { "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", new List<(string move, int weight)> {
+            ("e2e4", 50), ("d2d4", 30), ("c2c4", 20)
+        }},
+        
+        // Caro-Kann Defense
+        { "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1", new List<(string move, int weight)> {
+            ("c6", 100)
+        }},
+
+        // King's Indian Defense
+        { "rnbqkbnr/pppppppp/8/8/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 0 1", new List<(string move, int weight)> {
+            ("Nf6", 100)
+        }},
+        { "rnbqkbnr/pppppppp/5n2/8/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 2", new List<(string move, int weight)> {
+            ("c4", 100)
+        }},
+        { "rnbqkb1r/pppppppp/5n2/8/2P5/8/PP3PPP/RNBQKBNR b KQkq - 0 2", new List<(string move, int weight)> {
+            ("g6", 100)
+        }},
+
+        // Ruy López Opening
+        { "rnbqkbnr/pppppppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1", new List<(string move, int weight)> {
+            ("e5", 100)
+        }},
+        { "rnbqkbnr/pppppppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2", new List<(string move, int weight)> {
+            ("Nc6", 100)
+        }},
+        { "r1bqkbnr/pppppppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 2 3", new List<(string move, int weight)> {
+            ("Bb5", 100)
+        }},
+
+        // Queen's Gambit
+        { "rnbqkbnr/ppp1pppp/8/3p4/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 0 1", new List<(string move, int weight)> {
+            ("d5", 100)
+        }},
+        { "rnbqkbnr/ppp1pppp/8/3p4/2PP4/8/PP3PPP/RNBQKBNR b KQkq d3 0 2", new List<(string move, int weight)> {
+            ("c4", 100)
+        }},
+    };
+
     // Returns the evaluation weight for a given item
     int EvalWeight(int item) => (int)(packedData[item >> 1] >> item * 32);
 
@@ -54,6 +100,26 @@ public class KnightVision : IChessBot
     {
         board = boardOrig;
         timer = timerOrig;
+
+        // Check if the current position is in the opening book
+        string fen = board.GetFenString();
+        if (openingBook.ContainsKey(fen))
+        {
+            // Choose a move from the opening book
+            var openingMoves = openingBook[fen];
+            int totalWeight = openingMoves.Sum(move => move.weight);
+            int randomWeight = new Random().Next(totalWeight);
+            int cumulativeWeight = 0;
+
+            foreach (var move in openingMoves)
+            {
+                cumulativeWeight += move.weight;
+                if (randomWeight < cumulativeWeight)
+                {
+                    return new Move(move.move, board);
+                }
+            }
+        }
 
         // Set the maximum search time we can allocate per move
         maxSearchTime = timer.MillisecondsRemaining / 4;
