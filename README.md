@@ -59,7 +59,7 @@ KnightVision uses a combination of advanced techniques to make its moves:
 
 2. **Navigate to the project**:
    ```bash
-   cd KnightVision
+   cd KnightVision\Chess-Challgenge
    ```
 
 3. **Build the project**:
